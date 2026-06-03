@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>DropFocus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #13131a;
+  --surface2: #1c1c26;
+  --border: rgba(255,255,255,0.07);
+  --accent: #f5a623;
+  --accent2: #e8563a;
+  --green: #2ecc71;
+  --red: #e74c3c;
+  --blue: #4a9eff;
+  --text: #f0f0f5;
+  --muted: rgba(240,240,245,0.45);
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; overflow-x: hidden; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* LAYOUT */
+.app { display: flex; flex-direction: column; min-height: 100vh; max-width: 480px; margin: 0 auto; position: relative; }
+.screen { display: none; flex-direction: column; flex: 1; padding: 0 0 90px; animation: fadeIn .3s ease; }
+.screen.active { display: flex; }
+@keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+/* TOP BAR */
+.topbar { padding: 20px 20px 0; display: flex; align-items: center; justify-content: space-between; }
+.topbar-title { font-family: var(--font-display); font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+.topbar-title span { color: var(--accent); }
+.topbar-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+/* STREAK BADGE */
+.streak-badge { background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 20px; padding: 6px 12px; font-family: var(--font-display); font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+
+/* COUNTDOWN BANNER */
+.countdown-banner { margin: 16px 20px 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; position: relative; overflow: hidden; }
+.countdown-banner::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+.countdown-days { font-family: var(--font-display); font-size: 42px; font-weight: 800; color: var(--accent); line-height: 1; }
+.countdown-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+.countdown-motivation { font-size: 13px; color: var(--muted); max-width: 180px; line-height: 1.5; text-align: right; font-style: italic; }
+
+/* MORNING CARD */
+.morning-card { margin: 16px 20px 0; background: linear-gradient(135deg, rgba(245,166,35,0.12), rgba(232,86,58,0.08)); border: 1px solid rgba(245,166,35,0.2); border-radius: var(--radius); padding: 16px 20px; }
+.morning-why-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent); font-weight: 600; margin-bottom: 6px; }
+.morning-why-text { font-family: var(--font-display); font-size: 15px; font-weight: 600; line-height: 1.5; color: var(--text); }
+
+/* SECTION */
+.section { margin: 20px 20px 0; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.section-title { font-family: var(--font-display); font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+.btn-add { background: var(--accent); color: #000; border: none; border-radius: 20px; padding: 6px 14px; font-family: var(--font-display); font-size: 12px; font-weight: 700; cursor: pointer; transition: transform .15s, opacity .15s; }
+.btn-add:active { transform: scale(0.96); opacity: 0.85; }
+
+/* PROGRESS BAR */
+.progress-wrap { margin: 16px 20px 0; }
+.progress-info { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; color: var(--muted); }
+.progress-bar { background: var(--surface2); border-radius: 4px; height: 6px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 4px; transition: width .5s ease; }
+
+/* TASK CARD */
+.task-list { display: flex; flex-direction: column; gap: 8px; }
+.task-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; display: flex; align-items: center; gap: 12px; transition: border-color .2s; position: relative; overflow: hidden; }
+.task-card.done { opacity: 0.5; }
+.task-card.done .task-name { text-decoration: line-through; }
+.task-check { width: 24px; height: 24px; border-radius: 8px; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all .2s; background: transparent; }
+.task-check.done { background: var(--green); border-color: var(--green); }
+.task-check.failed { background: var(--red); border-color: var(--red); }
+.task-check svg { opacity: 0; transition: opacity .2s; }
+.task-check.done svg, .task-check.failed svg { opacity: 1; }
+.task-info { flex: 1; min-width: 0; }
+.task-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-meta { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.task-cat { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.cat-shopify { background: rgba(150,191,100,0.15); color: #96bf64; }
+.cat-content { background: rgba(74,158,255,0.15); color: #4a9eff; }
+.cat-research { background: rgba(245,166,35,0.15); color: var(--accent); }
+.cat-alt { background: rgba(240,240,245,0.1); color: var(--muted); }
+.task-time { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 3px; }
+.task-actions { display: flex; gap: 6px; }
+.task-btn { background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer; color: var(--muted); transition: all .15s; }
+.task-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+.task-btn.fail-btn:hover { color: var(--red); border-color: var(--red); }
+.task-btn.del-btn:hover { color: var(--red); border-color: var(--red); }
+
+/* QUOTE CARD */
+.quote-card { margin: 16px 20px 0; background: var(--surface2); border-radius: var(--radius-sm); padding: 16px 20px; border-left: 3px solid var(--accent); }
+.quote-text { font-style: italic; font-size: 13px; line-height: 1.6; color: var(--text); }
+.quote-author { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+/* MODAL */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: flex-end; justify-content: center; backdrop-filter: blur(4px); }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--surface); border-radius: 24px 24px 0 0; padding: 24px 20px 36px; width: 100%; max-width: 480px; animation: slideUp .3s ease; }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-title { font-family: var(--font-display); font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+.modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; display: block; }
+.form-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 16px; color: var(--text); font-family: var(--font-body); font-size: 15px; outline: none; transition: border-color .2s; }
+.form-input:focus { border-color: var(--accent); }
+.form-select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 16px; color: var(--text); font-family: var(--font-body); font-size: 15px; outline: none; appearance: none; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.btn-primary { width: 100%; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #000; border: none; border-radius: var(--radius-sm); padding: 16px; font-family: var(--font-display); font-size: 16px; font-weight: 700; cursor: pointer; transition: opacity .15s, transform .15s; margin-top: 8px; }
+.btn-primary:active { opacity: 0.85; transform: scale(0.98); }
+.btn-cancel { width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; font-family: var(--font-body); font-size: 14px; cursor: pointer; margin-top: 8px; }
+
+/* BOTTOM NAV */
+.bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: rgba(10,10,15,0.95); backdrop-filter: blur(12px); border-top: 1px solid var(--border); display: flex; padding: 10px 0 20px; z-index: 50; }
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 6px 0; transition: opacity .15s; }
+.nav-item:active { opacity: 0.7; }
+.nav-icon { font-size: 20px; transition: transform .2s; }
+.nav-item.active .nav-icon { transform: scale(1.15); }
+.nav-label { font-size: 10px; color: var(--muted); transition: color .2s; font-family: var(--font-display); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.nav-item.active .nav-label { color: var(--accent); }
+
+/* CALENDAR */
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 6px; }
+.cal-day-name { text-align: center; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.cal-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; font-size: 13px; cursor: pointer; border: 1px solid transparent; transition: all .15s; position: relative; }
+.cal-day:hover { border-color: var(--border); }
+.cal-day.today { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.cal-day.has-tasks::after { content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px; background: var(--accent); border-radius: 50%; }
+.cal-day.all-done::after { background: var(--green); }
+.cal-day.selected { background: var(--surface2); }
+.cal-day.other-month { opacity: 0.25; }
+.cal-month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cal-month-title { font-family: var(--font-display); font-size: 16px; font-weight: 700; }
+.cal-nav-btn { background: var(--surface2); border: none; color: var(--text); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+
+/* TIMELINE */
+.view-toggle{display:flex;gap:6px;background:var(--surface2);border-radius:20px;padding:4px;}
+.view-btn{padding:5px 14px;border-radius:16px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .2s;font-family:var(--font-display);}
+.view-btn.active{background:var(--accent);color:#000;}
+.timeline-outer{position:relative;padding-left:50px;margin-top:8px;}
+.tl-hour-row{height:60px;border-top:1px solid var(--border);position:relative;}
+.tl-hour-row:last-child{border-bottom:1px solid var(--border);}
+.tl-hour-label{position:absolute;left:-50px;top:-9px;width:42px;text-align:right;font-size:11px;color:var(--muted);}
+.tl-task-block{position:absolute;left:4px;right:4px;border-radius:8px;padding:5px 8px;font-size:12px;font-weight:600;cursor:pointer;overflow:hidden;z-index:3;transition:opacity .15s;}
+.tl-task-block.cat-shopify{background:rgba(150,191,100,0.2);border-left:3px solid #96bf64;color:#c8e8a0;}
+.tl-task-block.cat-content{background:rgba(74,158,255,0.18);border-left:3px solid #4a9eff;color:#9ac8ff;}
+.tl-task-block.cat-research{background:rgba(245,166,35,0.18);border-left:3px solid var(--accent);color:#ffd080;}
+.tl-task-block.cat-alt{background:rgba(240,240,245,0.07);border-left:3px solid var(--muted);color:var(--muted);}
+.tl-task-block.done{opacity:0.35;}
+.tl-task-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tl-task-sub{font-size:10px;opacity:0.7;margin-top:1px;}
+.tl-now-line{position:absolute;left:-50px;right:0;height:2px;background:var(--accent2);z-index:5;pointer-events:none;}
+.tl-now-dot{position:absolute;left:-54px;top:-4px;width:10px;height:10px;background:var(--accent2);border-radius:50%;}
+.tl-day-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.tl-day-title{font-family:var(--font-display);font-size:15px;font-weight:700;}
+.goal-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.goal-week { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 2px; }
+.goal-text { font-size: 14px; font-weight: 500; flex: 1; }
+.goal-status { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; cursor: pointer; border: none; transition: all .2s; }
+.status-todo { background: var(--surface2); color: var(--muted); }
+.status-progress { background: rgba(245,166,35,0.15); color: var(--accent); }
+.status-done { background: rgba(46,204,113,0.15); color: var(--green); }
+
+/* STATS */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; }
+.stat-num { font-family: var(--font-display); font-size: 32px; font-weight: 800; color: var(--accent); }
+.stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+.week-bars { display: flex; align-items: flex-end; gap: 6px; height: 80px; margin-top: 8px; }
+.week-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+.week-bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; min-height: 4px; transition: height .5s ease; }
+.week-bar-label { font-size: 9px; color: var(--muted); }
+
+/* JOURNAL */
+.journal-entry { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 10px; }
+.journal-date { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+.journal-text { font-size: 14px; line-height: 1.6; }
+.journal-win { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 12px; color: var(--green); }
+.textarea-field { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; color: var(--text); font-family: var(--font-body); font-size: 14px; outline: none; resize: none; min-height: 100px; transition: border-color .2s; line-height: 1.6; }
+.textarea-field:focus { border-color: var(--accent); }
+
+/* SETTINGS */
+.settings-section { margin-bottom: 24px; }
+.settings-title { font-family: var(--font-display); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 12px; }
+.settings-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.settings-row { padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+.settings-row:last-child { border-bottom: none; }
+.settings-row-label { font-size: 14px; }
+.settings-row-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.settings-input { background: transparent; border: none; color: var(--accent); font-family: var(--font-display); font-size: 14px; font-weight: 700; text-align: right; outline: none; width: 140px; }
+.settings-date { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--text); font-family: var(--font-body); font-size: 13px; outline: none; }
+
+/* EMPTY STATE */
+.empty-state { text-align: center; padding: 40px 20px; }
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-text { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+/* CHIP TABS */
+.chip-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.chip-tabs::-webkit-scrollbar { display: none; }
+.chip { padding: 7px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); color: var(--muted); background: transparent; white-space: nowrap; transition: all .2s; }
+.chip.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+
+/* TOGGLE */
+.toggle { width: 44px; height: 24px; background: var(--surface2); border-radius: 12px; position: relative; cursor: pointer; transition: background .2s; border: 1px solid var(--border); }
+.toggle.on { background: var(--accent); border-color: var(--accent); }
+.toggle-thumb { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: var(--muted); border-radius: 50%; transition: all .2s; }
+.toggle.on .toggle-thumb { left: 23px; background: #000; }
+
+/* UTILS */
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.flex-center { display: flex; align-items: center; justify-content: center; }
+.text-accent { color: var(--accent); }
+.text-muted { color: var(--muted); }
+.text-green { color: var(--green); }
+.text-red { color: var(--red); }
+.hidden { display: none !important; }
+
+/* SETUP SCREEN */
+.setup-screen { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 200; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px; }
+.setup-screen.open { display: flex; }
+.setup-logo { font-family: var(--font-display); font-size: 48px; font-weight: 800; margin-bottom: 8px; }
+.setup-logo span { color: var(--accent); }
+.setup-sub { font-size: 15px; color: var(--muted); text-align: center; margin-bottom: 40px; line-height: 1.6; }
+.setup-form { width: 100%; max-width: 380px; }
+.setup-step { display: none; }
+.setup-step.active { display: block; }
+.setup-step-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+.setup-step-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div class="setup-screen" id="setupScreen">
+  <div class="setup-logo">Drop<span>Focus</span></div>
+  <p class="setup-sub">Setează-ți aplicația o singură dată.<br>Datele se salvează automat.</p>
+  <div class="setup-form">
+    <div class="setup-step active" id="step1">
+      <p class="setup-step-title">Care e motivul tău real?</p>
+      <p class="setup-step-sub">Scrie-l sincer — îl vei vedea în fiecare dimineață.</p>
+      <div class="form-group">
+        <textarea class="textarea-field" id="setupWhy" placeholder="Ex: Vreau să demonstrez că pot reuși pe cont propriu..." rows="4"></textarea>
+      </div>
+      <button class="btn-primary" onclick="setupStep2()">Continuă →</button>
+    </div>
+    <div class="setup-step" id="step2">
+      <p class="setup-step-title">Când începe provocarea ta?</p>
+      <p class="setup-step-sub">Data de start și durata (implicit 30 de zile).</p>
+      <div class="form-group">
+        <label class="form-label">Data de start</label>
+        <input type="date" class="form-input" id="setupStart">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Durata (zile)</label>
+        <input type="number" class="form-input" id="setupDays" value="30" min="7" max="365">
+      </div>
+      <button class="btn-primary" onclick="setupStep3()">Continuă →</button>
+    </div>
+    <div class="setup-step" id="step3">
+      <p class="setup-step-title">Obiectivele tale pentru această lună</p>
+      <p class="setup-step-sub">Adaugă cele mai importante obiective (poți adăuga mai târziu).</p>
+      <div id="setupGoalsList" style="margin-bottom:12px;"></div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <input type="text" class="form-input" id="setupGoalInput" placeholder="Ex: Lansez magazinul Shopify" style="flex:1;">
+        <button class="btn-add" onclick="addSetupGoal()" style="white-space:nowrap;">+ Adaugă</button>
+      </div>
+      <button class="btn-primary" onclick="finishSetup()">Începe DropFocus 🚀</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app" id="mainApp" style="display:none;">
+
+  <!-- SCREEN: AZI -->
+  <div class="screen active" id="screenAzi">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Drop<span>Focus</span></div>
+        <div class="topbar-sub" id="todayDateLabel"></div>
+      </div>
+      <div class="topbar-right">
+        <div class="streak-badge" id="streakBadge">🔥 <span id="streakCount">0</span></div>
+      </div>
+    </div>
+
+    <div class="countdown-banner">
+      <div>
+        <div class="countdown-days" id="daysLeft">—</div>
+        <div class="countdown-label">zile rămase</div>
+      </div>
+      <div class="countdown-motivation" id="weekMessage">Fiecare zi contează.</div>
+    </div>
+
+    <div class="morning-card">
+      <div class="morning-why-label">De ce fac asta</div>
+      <div class="morning-why-text" id="whyText">—</div>
+    </div>
+
+    <div class="quote-card" id="quoteCard">
+      <div class="quote-text" id="quoteText">—</div>
+      <div class="quote-author" id="quoteAuthor">—</div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-info">
+        <span id="progressLabel">0 / 0 taskuri azi</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">Taskurile de azi</span>
+        <button class="btn-add" onclick="openAddTask()">+ Task</button>
+      </div>
+      <div class="task-list" id="todayTaskList">
+        <div class="empty-state">
+          <div class="empty-icon">☀️</div>
+          <div class="empty-text">Niciun task adăugat încă.<br>Planifică-ți ziua!</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" id="eveningSection">
+      <div class="section-header">
+        <span class="section-title">Nota de seară</span>
+      </div>
+      <div style="margin-bottom:10px;">
+        <input type="text" class="form-input" id="eveningWin" placeholder="🏆 Care a fost cel mai bun lucru azi?">
+      </div>
+      <textarea class="textarea-field" id="eveningNote" placeholder="Cum a fost ziua? Ce ai învățat? Ce vei face mâine diferit?" rows="3"></textarea>
+      <button class="btn-primary mt-8" onclick="saveEveningNote()">Salvează nota zilei</button>
+    </div>
+  </div>
+
+  <!-- SCREEN: CALENDAR -->
+  <div class="screen" id="screenCalendar">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Calendar</div>
+        <div class="topbar-sub" id="calSelectedLabel">Selectează o zi</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="view-toggle">
+          <button class="view-btn active" id="btnMonthView" onclick="setCalView('month')">Lună</button>
+          <button class="view-btn" id="btnDayView" onclick="setCalView('day')">Zi / Ore</button>
+        </div>
+        <button class="btn-add" onclick="openAddTask(true)">+ Task</button>
+      </div>
+    </div>
+
+    <!-- MONTH VIEW -->
+    <div id="calMonthView">
+      <div class="section" style="margin-top:20px;">
+        <div class="cal-month-nav">
+          <button class="cal-nav-btn" onclick="changeCalMonth(-1)">‹</button>
+          <span class="cal-month-title" id="calMonthTitle">—</span>
+          <button class="cal-nav-btn" onclick="changeCalMonth(1)">›</button>
+        </div>
+        <div class="cal-header" id="calHeader"></div>
+        <div class="calendar-grid" id="calGrid"></div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title" id="calDayTasksLabel">Taskuri zi selectată</span>
+        </div>
+        <div class="task-list" id="calTaskList">
+          <div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Selectează o zi din calendar</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIMELINE VIEW -->
+    <div id="calDayView" style="display:none;">
+      <div class="section" style="margin-top:16px;">
+        <div class="tl-day-nav">
+          <button class="cal-nav-btn" onclick="changeTimelineDay(-1)">‹</button>
+          <span class="tl-day-title" id="tlDayTitle">—</span>
+          <button class="cal-nav-btn" onclick="changeTimelineDay(1)">›</button>
+        </div>
+        <div id="timelineContainer" style="overflow-y:auto;max-height:calc(100vh - 230px);padding-bottom:20px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: LUNA MEA -->
+  <div class="screen" id="screenLuna">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Luna mea</div>
+        <div class="topbar-sub" id="lunaSubtitle">Obiective mari</div>
+      </div>
+      <button class="btn-add" onclick="openAddGoal()">+ Obiectiv</button>
+    </div>
+
+    <div class="section" style="margin-top:20px;">
+      <div class="chip-tabs" id="weekFilter">
+        <div class="chip active" onclick="filterGoals('all', this)">Toate</div>
+        <div class="chip" onclick="filterGoals('s1', this)">Săpt 1</div>
+        <div class="chip" onclick="filterGoals('s2', this)">Săpt 2</div>
+        <div class="chip" onclick="filterGoals('s3', this)">Săpt 3</div>
+        <div class="chip" onclick="filterGoals('s4', this)">Săpt 4</div>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:16px;">
+      <div id="goalsList"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN: STATS -->
+  <div class="screen" id="screenStats">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Statistici</div>
+        <div class="topbar-sub">Progresul tău</div>
+      </div>
+    </div>
+    <div class="section" style="margin-top:20px;">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-num" id="statStreak">0</div>
+          <div class="stat-label">🔥 Streak zile consecutive</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="statWeek">0</div>
+          <div class="stat-label">✅ Taskuri săptămâna asta</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="statTotal">0</div>
+          <div class="stat-label">📋 Total taskuri completate</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="statRate">0%</div>
+          <div class="stat-label">🎯 Rată completare generală</div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title" style="margin-bottom:12px;">Ultimele 7 zile</div>
+      <div class="stat-card" style="background: var(--surface);">
+        <div class="week-bars" id="weekBars"></div>
+        <div style="display:flex; gap:6px; margin-top:8px;" id="weekBarLabels"></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title" style="margin-bottom:12px;">Jurnal recent</div>
+      <div id="recentJournal"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN: JURNAL -->
+  <div class="screen" id="screenJurnal">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Jurnal</div>
+        <div class="topbar-sub">Reflecțiile tale zilnice</div>
+      </div>
+    </div>
+    <div class="section" style="margin-top:20px;">
+      <div id="journalList"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN: SETĂRI -->
+  <div class="screen" id="screenSetari">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Setări</div>
+        <div class="topbar-sub">Configurează DropFocus</div>
+      </div>
+    </div>
+    <div class="section" style="margin-top:20px;">
+      <div class="settings-section">
+        <div class="settings-title">Motivație</div>
+        <div class="settings-card">
+          <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
+            <div class="settings-row-label">De ce faci asta</div>
+            <textarea class="textarea-field" id="settingsWhy" rows="3" placeholder="Motivul tău real..."></textarea>
+            <button class="btn-add" onclick="saveWhy()" style="margin-top:4px;">Salvează</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">Intervalul provocării</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <div>
+              <div class="settings-row-label">Data de start</div>
+            </div>
+            <input type="date" class="settings-date" id="settingsStart" onchange="saveInterval()">
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-row-label">Durata (zile)</div>
+            </div>
+            <input type="number" class="settings-input" id="settingsDays" min="7" max="365" onchange="saveInterval()">
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-row-label">Zile rămase</div>
+            </div>
+            <span class="text-accent" id="settingsDaysLeft" style="font-family:var(--font-display);font-weight:700;">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">Date</div>
+        <div class="settings-card">
+          <div class="settings-row" onclick="exportData()" style="cursor:pointer;">
+            <div>
+              <div class="settings-row-label">Exportă datele</div>
+              <div class="settings-row-sub">Descarcă un fișier JSON cu toate datele</div>
+            </div>
+            <span style="color:var(--accent);">↓</span>
+          </div>
+          <div class="settings-row" style="cursor:pointer;" onclick="document.getElementById('importFile').click()">
+            <div>
+              <div class="settings-row-label">Importă datele</div>
+              <div class="settings-row-sub">Restaurează dintr-un fișier JSON</div>
+            </div>
+            <span style="color:var(--accent);">↑</span>
+          </div>
+          <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" onclick="switchScreen('azi', this)">
+      <span class="nav-icon">☀️</span>
+      <span class="nav-label">Azi</span>
+    </div>
+    <div class="nav-item" onclick="switchScreen('calendar', this)">
+      <span class="nav-icon">📅</span>
+      <span class="nav-label">Calendar</span>
+    </div>
+    <div class="nav-item" onclick="switchScreen('luna', this)">
+      <span class="nav-icon">🎯</span>
+      <span class="nav-label">Obiective</span>
+    </div>
+    <div class="nav-item" onclick="switchScreen('stats', this)">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Stats</span>
+    </div>
+    <div class="nav-item" onclick="switchScreen('jurnal', this)">
+      <span class="nav-icon">📝</span>
+      <span class="nav-label">Jurnal</span>
+    </div>
+    <div class="nav-item" onclick="switchScreen('setari', this)">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label">Setări</span>
+    </div>
+  </nav>
+</div>
+
+<!-- MODAL: ADD TASK -->
+<div class="modal-overlay" id="addTaskModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Task nou</div>
+    <div class="form-group">
+      <label class="form-label">Numele taskului</label>
+      <input type="text" class="form-input" id="taskName" placeholder="Ex: Postez videoclip TikTok">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Categorie</label>
+        <select class="form-select" id="taskCat">
+          <option value="shopify">🛍 Shopify</option>
+          <option value="content">🎥 Content</option>
+          <option value="research">🔍 Research</option>
+          <option value="alt">📌 Alt</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input type="date" class="form-input" id="taskDate">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Interval orar</label>
+      <div class="form-row">
+        <div>
+          <label class="form-label" style="font-size:10px; margin-bottom:4px;">Ora start</label>
+          <div style="display:flex;gap:4px;align-items:center;">
+            <select class="form-select" id="taskStartH" style="flex:1;padding:11px 8px;"></select>
+            <span style="color:var(--muted);font-weight:700;">:</span>
+            <select class="form-select" id="taskStartM" style="flex:1;padding:11px 8px;"></select>
+          </div>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:10px; margin-bottom:4px;">Ora final</label>
+          <div style="display:flex;gap:4px;align-items:center;">
+            <select class="form-select" id="taskEndH" style="flex:1;padding:11px 8px;"></select>
+            <span style="color:var(--muted);font-weight:700;">:</span>
+            <select class="form-select" id="taskEndM" style="flex:1;padding:11px 8px;"></select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="saveTask()">Adaugă task</button>
+    <button class="btn-cancel" onclick="closeModal('addTaskModal')">Anulează</button>
+  </div>
+</div>
+
+<!-- MODAL: ADD GOAL -->
+<div class="modal-overlay" id="addGoalModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Obiectiv nou</div>
+    <div class="form-group">
+      <label class="form-label">Obiectivul</label>
+      <input type="text" class="form-input" id="goalText" placeholder="Ex: Lansez prima campanie Meta Ads">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Săptămâna</label>
+      <select class="form-select" id="goalWeek">
+        <option value="s1">Săptămâna 1</option>
+        <option value="s2">Săptămâna 2</option>
+        <option value="s3">Săptămâna 3</option>
+        <option value="s4">Săptămâna 4</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="saveGoal()">Adaugă obiectiv</button>
+    <button class="btn-cancel" onclick="closeModal('addGoalModal')">Anulează</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY='dropfocus_v2';
+let db={config:{why:'',startDate:'',totalDays:30},tasks:{},goals:[],journal:{}};
+function loadDB(){try{const r=localStorage.getItem(STORAGE_KEY);if(r)db=JSON.parse(r);}catch(e){}}
+function saveDB(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(db));}catch(e){}}
+function todayStr(){return new Date().toISOString().slice(0,10);}
+
+const quotes=[
+  {text:"Most people quit on day 29 of a 30-day challenge. Don't be most people.",author:"— Unknown"},
+  {text:"You don't have to be great to start, but you have to start to be great.",author:"— Zig Ziglar"},
+  {text:"The secret of getting ahead is getting started.",author:"— Mark Twain"},
+  {text:"Success is not final, failure is not fatal: it is the courage to continue that counts.",author:"— Winston Churchill"},
+  {text:"A year from now you'll wish you had started today.",author:"— Karen Lamb"},
+  {text:"Don't count the days, make the days count.",author:"— Muhammad Ali"},
+  {text:"Small daily improvements over time lead to stunning results.",author:"— Robin Sharma"},
+  {text:"Discipline is choosing between what you want now and what you want most.",author:"— Augusta F. Kantra"},
+  {text:"Build your own dreams, or someone else will hire you to build theirs.",author:"— Farrah Gray"},
+  {text:"The best time to plant a tree was 20 years ago. The second best time is now.",author:"— Chinese Proverb"},
+  {text:"Work hard in silence, let your success make the noise.",author:"— Frank Ocean"},
+  {text:"Entrepreneurship is living a few years of your life like most people won't, so you can spend the rest like most people can't.",author:"— Unknown"},
+  {text:"Either you run the day or the day runs you.",author:"— Jim Rohn"},
+  {text:"Don't stop when you're tired. Stop when you're done.",author:"— Unknown"},
+  {text:"Consistency is what transforms average into excellence.",author:"— Unknown"},
+  {text:"Hustle until your haters ask if you're hiring.",author:"— Unknown"},
+  {text:"Your future is created by what you do today, not tomorrow.",author:"— Robert Kiyosaki"},
+  {text:"If you really want to do something, you'll find a way. If you don't, you'll find an excuse.",author:"— Jim Rohn"},
+  {text:"The pain of discipline is far less than the pain of regret.",author:"— Unknown"},
+  {text:"Every expert was once a beginner. Every pro was once an amateur.",author:"— Robin Sharma"}
+];
+function getDailyQuote(){return quotes[Math.floor(Date.now()/86400000)%quotes.length];}
+function getWeekMessage(dl,total){const done=total-dl;if(done<7)return"Săptămâna 1 — setup & fundație. Fiecare detaliu contează.";if(done<14)return"Săptămâna 2 — primele videoclipuri. Algoritmul te cunoaște.";if(done<21)return"Săptămâna 3 — nu te opri. Acum se formează tracțiunea.";return"Săptămâna 4 — final sprint. Demonstrează-le tuturor.";}
+
+// SETUP
+let setupGoals=[];
+function initSetup(){document.getElementById('setupStart').value=todayStr();}
+function setupStep2(){const w=document.getElementById('setupWhy').value.trim();if(!w){alert('Te rog adaugă motivul tău.');return;}db.config.why=w;document.getElementById('step1').classList.remove('active');document.getElementById('step2').classList.add('active');}
+function setupStep3(){const s=document.getElementById('setupStart').value,d=parseInt(document.getElementById('setupDays').value);if(!s||!d){alert('Completează data și durata.');return;}db.config.startDate=s;db.config.totalDays=d;document.getElementById('step2').classList.remove('active');document.getElementById('step3').classList.add('active');}
+function addSetupGoal(){const v=document.getElementById('setupGoalInput').value.trim();if(!v)return;setupGoals.push(v);document.getElementById('setupGoalInput').value='';renderSetupGoals();}
+function renderSetupGoals(){document.getElementById('setupGoalsList').innerHTML=setupGoals.map((g,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span style="flex:1;font-size:14px;">✓ ${g}</span><button onclick="setupGoals.splice(${i},1);renderSetupGoals();" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:18px;">×</button></div>`).join('');}
+function finishSetup(){const weeks=['s1','s2','s3','s4'];setupGoals.forEach((g,i)=>{db.goals.push({id:'g'+Date.now()+i,text:g,week:weeks[Math.min(i,3)],status:'todo'});});saveDB();document.getElementById('setupScreen').classList.remove('open');document.getElementById('mainApp').style.display='flex';initApp();}
+
+// NAV
+function switchScreen(name,el){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('screen'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
+  el.classList.add('active');
+  if(name==='stats')renderStats();
+  if(name==='jurnal')renderJournal();
+  if(name==='luna')renderGoals('all');
+  if(name==='setari')renderSettings();
+  if(name==='calendar'){renderCalendar();renderCalDay(calSelectedDate);if(currentCalView==='day')renderTimeline(calSelectedDate);}
+}
+
+// TODAY
+function initTodayScreen(){
+  const t=new Date();
+  const dayNames=['Duminică','Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă'];
+  const monthNames=['ian','feb','mar','apr','mai','iun','iul','aug','sep','oct','nov','dec'];
+  document.getElementById('todayDateLabel').textContent=dayNames[t.getDay()]+', '+t.getDate()+' '+monthNames[t.getMonth()]+' '+t.getFullYear();
+  document.getElementById('whyText').textContent=db.config.why||'—';
+  const start=new Date(db.config.startDate),end=new Date(start);
+  end.setDate(end.getDate()+db.config.totalDays);
+  const dl=Math.max(0,Math.ceil((end-new Date())/86400000));
+  document.getElementById('daysLeft').textContent=dl;
+  document.getElementById('weekMessage').textContent=getWeekMessage(dl,db.config.totalDays);
+  document.getElementById('streakCount').textContent=calcStreak();
+  const q=getDailyQuote();
+  document.getElementById('quoteText').textContent=q.text;
+  document.getElementById('quoteAuthor').textContent=q.author;
+  renderTodayTasks();
+  const j=db.journal[todayStr()];
+  if(j){document.getElementById('eveningNote').value=j.note||'';document.getElementById('eveningWin').value=j.win||'';}
+}
+
+function formatInterval(t){
+  if(t.timeStart&&t.timeEnd)return t.timeStart+' – '+t.timeEnd;
+  return '';
+}
+
+function renderTaskCard(t,dateStr){
+  const catL={shopify:'Shopify',content:'Content',research:'Research',alt:'Alt'};
+  const catC={shopify:'cat-shopify',content:'cat-content',research:'cat-research',alt:'cat-alt'};
+  const chk=t.status==='done'?'done':t.status==='failed'?'failed':'';
+  const icon=t.status==='done'?`<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg>`:t.status==='failed'?`<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>`:'';
+  const interval=formatInterval(t);
+  return`<div class="task-card ${t.status==='done'?'done':''}">
+    <div class="task-check ${chk}" onclick="toggleTask('${dateStr}','${t.id}')">${icon}</div>
+    <div class="task-info">
+      <div class="task-name">${t.name}</div>
+      <div class="task-meta">
+        <span class="task-cat ${catC[t.cat]}">${catL[t.cat]}</span>
+        ${interval?`<span class="task-time" style="color:var(--accent);">⏰ ${interval}</span>`:''}
+      </div>
+    </div>
+    <div class="task-actions">
+      ${t.status!=='failed'&&t.status!=='done'?`<button class="task-btn fail-btn" onclick="failTask('${dateStr}','${t.id}')">✗</button>`:''}
+      <button class="task-btn" onclick="deleteTask('${dateStr}','${t.id}')">🗑</button>
+    </div>
+  </div>`;
+}
+
+function sortByTime(tasks){return tasks.slice().sort((a,b)=>(a.timeStart||'99:99').localeCompare(b.timeStart||'99:99'));}
+
+function renderTodayTasks(){
+  const today=todayStr();
+  const tasks=sortByTime(db.tasks[today]||[]);
+  const c=document.getElementById('todayTaskList');
+  c.innerHTML=tasks.length?tasks.map(t=>renderTaskCard(t,today)).join(''):`<div class="empty-state"><div class="empty-icon">☀️</div><div class="empty-text">Niciun task adăugat încă.<br>Planifică-ți ziua!</div></div>`;
+  const done=tasks.filter(t=>t.status==='done').length,total=tasks.length;
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('progressLabel').textContent=`${done} / ${total} taskuri azi`;
+  document.getElementById('progressPct').textContent=pct+'%';
+  document.getElementById('progressFill').style.width=pct+'%';
+}
+
+function toggleTask(ds,id){const t=(db.tasks[ds]||[]).find(t=>t.id===id);if(!t)return;t.status=t.status==='done'?'todo':'done';saveDB();if(ds===todayStr())renderTodayTasks();renderCalendar();if(ds===calSelectedDate){renderCalDay(ds);if(currentCalView==='day')renderTimeline(ds);}}
+function failTask(ds,id){const t=(db.tasks[ds]||[]).find(t=>t.id===id);if(!t)return;t.status='failed';saveDB();if(ds===todayStr())renderTodayTasks();if(ds===calSelectedDate){renderCalDay(ds);if(currentCalView==='day')renderTimeline(ds);}}
+function deleteTask(ds,id){if(!db.tasks[ds])return;db.tasks[ds]=db.tasks[ds].filter(t=>t.id!==id);saveDB();if(ds===todayStr())renderTodayTasks();renderCalendar();if(ds===calSelectedDate){renderCalDay(ds);if(currentCalView==='day')renderTimeline(ds);}}
+function saveEveningNote(){const today=todayStr(),note=document.getElementById('eveningNote').value.trim(),win=document.getElementById('eveningWin').value.trim();if(!note&&!win)return;db.journal[today]={note,win,date:today};saveDB();alert('✅ Nota zilei salvată!');}
+
+// ADD TASK MODAL
+let addingForCalendar=false;
+
+function populateTimeSelects(){
+  const hours=['00','01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23'];
+  const mins=['00','15','30','45'];
+  ['taskStartH','taskEndH'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el.options.length===0){hours.forEach(h=>{const o=document.createElement('option');o.value=h;o.textContent=h;el.appendChild(o);});}
+  });
+  ['taskStartM','taskEndM'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el.options.length===0){mins.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;el.appendChild(o);});}
+  });
+}
+
+function setTimeSelects(startHH,startMM,endHH,endMM){
+  document.getElementById('taskStartH').value=startHH;
+  document.getElementById('taskStartM').value=startMM;
+  document.getElementById('taskEndH').value=endHH;
+  document.getElementById('taskEndM').value=endMM;
+}
+
+function openAddTask(forCal){
+  addingForCalendar=!!forCal;
+  const d=addingForCalendar&&calSelectedDate?calSelectedDate:todayStr();
+  document.getElementById('taskDate').value=d;
+  document.getElementById('taskName').value='';
+  populateTimeSelects();
+  setTimeSelects('08','00','09','00');
+  document.getElementById('addTaskModal').classList.add('open');
+  setTimeout(()=>document.getElementById('taskName').focus(),100);
+}
+
+function saveTask(){
+  const name=document.getElementById('taskName').value.trim();
+  if(!name){alert('Adaugă un nume pentru task.');return;}
+  const cat=document.getElementById('taskCat').value;
+  const date=document.getElementById('taskDate').value||todayStr();
+  const timeStart=document.getElementById('taskStartH').value+':'+document.getElementById('taskStartM').value;
+  const timeEnd=document.getElementById('taskEndH').value+':'+document.getElementById('taskEndM').value;
+  if(!db.tasks[date])db.tasks[date]=[];
+  db.tasks[date].push({id:'t'+Date.now(),name,cat,timeStart,timeEnd,status:'todo'});
+  saveDB();
+  closeModal('addTaskModal');
+  if(date===todayStr())renderTodayTasks();
+  renderCalendar();
+  if(date===calSelectedDate){renderCalDay(date);if(currentCalView==='day')renderTimeline(date);}
+}
+
+// CALENDAR
+let calYear=new Date().getFullYear(),calMonth=new Date().getMonth(),calSelectedDate=todayStr(),currentCalView='month';
+
+function setCalView(v){
+  currentCalView=v;
+  document.getElementById('btnMonthView').classList.toggle('active',v==='month');
+  document.getElementById('btnDayView').classList.toggle('active',v==='day');
+  document.getElementById('calMonthView').style.display=v==='month'?'block':'none';
+  document.getElementById('calDayView').style.display=v==='day'?'block':'none';
+  if(v==='day')renderTimeline(calSelectedDate);
+}
+
+function renderCalendar(){
+  const months=['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie'];
+  const dH=['Lu','Ma','Mi','Jo','Vi','Sâ','Du'];
+  document.getElementById('calMonthTitle').textContent=months[calMonth]+' '+calYear;
+  document.getElementById('calHeader').innerHTML=dH.map(d=>`<div class="cal-day-name">${d}</div>`).join('');
+  const first=new Date(calYear,calMonth,1);let sd=first.getDay()-1;if(sd<0)sd=6;
+  const dim=new Date(calYear,calMonth+1,0).getDate(),prev=new Date(calYear,calMonth,0).getDate();
+  let cells='';
+  for(let i=0;i<sd;i++)cells+=`<div class="cal-day other-month">${prev-sd+i+1}</div>`;
+  const tf=todayStr();
+  for(let d=1;d<=dim;d++){
+    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const tasks=db.tasks[ds]||[];
+    const has=tasks.length>0,allD=has&&tasks.every(t=>t.status==='done');
+    cells+=`<div class="cal-day ${ds===tf?'today':''} ${has?'has-tasks':''} ${allD?'all-done':''} ${ds===calSelectedDate?'selected':''}" onclick="selectCalDay('${ds}')">${d}</div>`;
+  }
+  for(let i=1;i<=42-sd-dim;i++)cells+=`<div class="cal-day other-month">${i}</div>`;
+  document.getElementById('calGrid').innerHTML=cells;
+}
+
+function selectCalDay(ds){
+  calSelectedDate=ds;
+  renderCalendar();
+  renderCalDay(ds);
+  const d=new Date(ds+'T00:00:00');
+  const mNames=['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('calSelectedLabel').textContent=d.getDate()+' '+mNames[d.getMonth()]+' '+d.getFullYear();
+  if(currentCalView==='day')renderTimeline(ds);
+}
+
+function renderCalDay(ds){
+  if(!ds)return;
+  const d=new Date(ds+'T00:00:00');
+  const mNames=['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('calDayTasksLabel').textContent='Taskuri — '+d.getDate()+' '+mNames[d.getMonth()];
+  const tasks=sortByTime(db.tasks[ds]||[]);
+  const c=document.getElementById('calTaskList');
+  c.innerHTML=tasks.length?tasks.map(t=>renderTaskCard(t,ds)).join(''):`<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Niciun task pentru această zi.</div></div>`;
+}
+
+function changeCalMonth(dir){calMonth+=dir;if(calMonth<0){calMonth=11;calYear--;}if(calMonth>11){calMonth=0;calYear++;}renderCalendar();}
+
+// TIMELINE
+const TL_START=6,TL_END=23,HOUR_H=60;
+function timeToMin(ts){const[h,m]=ts.split(':').map(Number);return h*60+m;}
+function minToPx(min){return((min-TL_START*60)/60)*HOUR_H;}
+
+function renderTimeline(ds){
+  if(!ds)return;
+  const d=new Date(ds+'T00:00:00');
+  const dNames=['Dum','Lun','Mar','Mie','Joi','Vin','Sâm'];
+  const mNames=['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('tlDayTitle').textContent=dNames[d.getDay()]+', '+d.getDate()+' '+mNames[d.getMonth()]+' '+d.getFullYear();
+
+  const tasks=db.tasks[ds]||[];
+  const totalPx=(TL_END-TL_START)*HOUR_H;
+
+  let hoursHtml='';
+  for(let h=TL_START;h<=TL_END;h++){
+    hoursHtml+=`<div class="tl-hour-row" style="height:${HOUR_H}px;"><span class="tl-hour-label">${String(h).padStart(2,'0')}:00</span></div>`;
+  }
+
+  let blocksHtml='';
+  tasks.forEach(t=>{
+    if(!t.timeStart||!t.timeEnd)return;
+    const sm=timeToMin(t.timeStart),em=timeToMin(t.timeEnd);
+    if(em<=TL_START*60||sm>=TL_END*60)return;
+    const cs=Math.max(sm,TL_START*60),ce=Math.min(em,TL_END*60);
+    const top=minToPx(cs),height=Math.max(26,((ce-cs)/60)*HOUR_H);
+    blocksHtml+=`<div class="tl-task-block cat-${t.cat} ${t.status==='done'?'done':''}" style="top:${top}px;height:${height}px;" onclick="toggleTask('${ds}','${t.id}')">
+      <div class="tl-task-name">${t.name}</div>
+      <div class="tl-task-sub">${t.timeStart} – ${t.timeEnd}${t.status==='done'?' ✓':''}</div>
+    </div>`;
+  });
+
+  let nowHtml='';
+  if(ds===todayStr()){
+    const now=new Date(),nm=now.getHours()*60+now.getMinutes();
+    if(nm>=TL_START*60&&nm<=TL_END*60){
+      const top=minToPx(nm);
+      nowHtml=`<div class="tl-now-line" style="top:${top}px;"><div class="tl-now-dot"></div></div>`;
+    }
+  }
+
+  document.getElementById('timelineContainer').innerHTML=`<div class="tl-outer" style="position:relative;padding-left:50px;padding-right:8px;height:${totalPx+40}px;">${hoursHtml}${blocksHtml}${nowHtml}</div>`;
+}
+
+function changeTimelineDay(dir){
+  const d=new Date(calSelectedDate+'T00:00:00');d.setDate(d.getDate()+dir);
+  calSelectedDate=d.toISOString().slice(0,10);
+  renderCalendar();renderTimeline(calSelectedDate);
+}
+
+// GOALS
+function renderGoals(filter){
+  const goals=filter==='all'?db.goals:db.goals.filter(g=>g.week===filter);
+  const wL={s1:'Săptămâna 1',s2:'Săptămâna 2',s3:'Săptămâna 3',s4:'Săptămâna 4'};
+  const start=new Date(db.config.startDate),end=new Date(start);end.setDate(end.getDate()+db.config.totalDays);
+  document.getElementById('lunaSubtitle').textContent=db.config.startDate?`${start.toLocaleDateString('ro')} → ${end.toLocaleDateString('ro')}`:'Obiective mari';
+  const c=document.getElementById('goalsList');
+  if(!goals.length){c.innerHTML=`<div class="empty-state"><div class="empty-icon">🎯</div><div class="empty-text">Niciun obiectiv adăugat.<br>Adaugă primul!</div></div>`;return;}
+  c.innerHTML=goals.map(g=>{
+    const sm={todo:'To Do',progress:'În progres',done:'Finalizat'};
+    const sc={todo:'status-todo',progress:'status-progress',done:'status-done'};
+    return`<div class="goal-card"><div style="flex:1;"><div class="goal-week">${wL[g.week]}</div><div class="goal-text">${g.text}</div></div><button class="goal-status ${sc[g.status]}" onclick="cycleGoalStatus('${g.id}')">${sm[g.status]}</button><button onclick="deleteGoal('${g.id}')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0 4px;">×</button></div>`;
+  }).join('');
+}
+function filterGoals(f,el){document.querySelectorAll('#weekFilter .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderGoals(f);}
+function cycleGoalStatus(id){const g=db.goals.find(g=>String(g.id)===String(id));if(!g)return;const c={todo:'progress',progress:'done',done:'todo'};g.status=c[g.status];saveDB();renderGoals('all');}
+function deleteGoal(id){db.goals=db.goals.filter(g=>String(g.id)!==String(id));saveDB();renderGoals('all');}
+function openAddGoal(){document.getElementById('goalText').value='';document.getElementById('addGoalModal').classList.add('open');setTimeout(()=>document.getElementById('goalText').focus(),100);}
+function saveGoal(){const text=document.getElementById('goalText').value.trim();if(!text){alert('Adaugă textul obiectivului.');return;}const week=document.getElementById('goalWeek').value;db.goals.push({id:'g'+Date.now(),text,week,status:'todo'});saveDB();closeModal('addGoalModal');renderGoals('all');}
+
+// STATS
+function calcStreak(){let s=0,d=new Date();while(true){const ds=d.toISOString().slice(0,10),t=db.tasks[ds]||[];if(!t.length||!t.some(t=>t.status==='done'))break;s++;d.setDate(d.getDate()-1);}return s;}
+function renderStats(){
+  document.getElementById('statStreak').textContent=calcStreak();
+  let wD=0,tD=0,tA=0;const now=new Date();
+  Object.entries(db.tasks).forEach(([ds,tasks])=>{const diff=Math.floor((now-new Date(ds+'T00:00:00'))/86400000);tasks.forEach(t=>{tA++;if(t.status==='done'){tD++;if(diff<=7)wD++;}});});
+  document.getElementById('statWeek').textContent=wD;
+  document.getElementById('statTotal').textContent=tD;
+  document.getElementById('statRate').textContent=tA?Math.round(tD/tA*100)+'%':'0%';
+  const bars=document.getElementById('weekBars'),labels=document.getElementById('weekBarLabels');
+  const dn=['Du','Lu','Ma','Mi','Jo','Vi','Sâ'];
+  let bH='',lH='',mx=1,wd=[];
+  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=d.toISOString().slice(0,10),done=(db.tasks[ds]||[]).filter(t=>t.status==='done').length;wd.push({ds,done,dn:dn[d.getDay()]});if(done>mx)mx=done;}
+  wd.forEach(w=>{const h=Math.max(4,Math.round(w.done/mx*64));bH+=`<div class="week-bar-wrap"><div class="week-bar" style="height:${h}px;opacity:${w.ds===todayStr()?1:0.6};"></div></div>`;lH+=`<div style="flex:1;text-align:center;font-size:9px;color:var(--muted);">${w.dn}</div>`;});
+  bars.innerHTML=bH;labels.innerHTML=lH;
+  const rj=document.getElementById('recentJournal');
+  const entries=Object.values(db.journal).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
+  rj.innerHTML=entries.length?entries.map(e=>`<div class="journal-entry"><div class="journal-date">${new Date(e.date+'T00:00:00').toLocaleDateString('ro',{weekday:'long',day:'numeric',month:'long'})}</div><div class="journal-text">${e.note||'—'}</div>${e.win?`<div class="journal-win">🏆 ${e.win}</div>`:''}</div>`).join(''):`<div class="empty-state"><div class="empty-text">Nicio notă de jurnal încă.</div></div>`;
+}
+
+// JOURNAL
+function renderJournal(){
+  const entries=Object.values(db.journal).sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('journalList').innerHTML=entries.length?entries.map(e=>`<div class="journal-entry"><div class="journal-date">${new Date(e.date+'T00:00:00').toLocaleDateString('ro',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div><div class="journal-text">${e.note||'—'}</div>${e.win?`<div class="journal-win">🏆 ${e.win}</div>`:''}</div>`).join(''):`<div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">Nicio notă adăugată încă.<br>Scrie prima ta reflecție în ecranul Azi.</div></div>`;
+}
+
+// SETTINGS
+function renderSettings(){
+  document.getElementById('settingsWhy').value=db.config.why||'';
+  document.getElementById('settingsStart').value=db.config.startDate||'';
+  document.getElementById('settingsDays').value=db.config.totalDays||30;
+  const s=new Date(db.config.startDate),e=new Date(s);e.setDate(e.getDate()+db.config.totalDays);
+  document.getElementById('settingsDaysLeft').textContent=Math.max(0,Math.ceil((e-new Date())/86400000))+' zile';
+}
+function saveWhy(){db.config.why=document.getElementById('settingsWhy').value.trim();saveDB();document.getElementById('whyText').textContent=db.config.why;alert('✅ Motivul salvat!');}
+function saveInterval(){db.config.startDate=document.getElementById('settingsStart').value;db.config.totalDays=parseInt(document.getElementById('settingsDays').value)||30;saveDB();renderSettings();initTodayScreen();}
+function exportData(){const b=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='dropfocus_backup_'+todayStr()+'.json';a.click();}
+function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{db=JSON.parse(ev.target.result);saveDB();initApp();alert('✅ Date importate cu succes!');}catch{alert('Fișier invalid.');}};r.readAsText(f);}
+
+// UTILS
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});
+
+// INIT
+function initApp(){initTodayScreen();renderCalendar();renderCalDay(todayStr());renderGoals('all');}
+loadDB();
+if(!db.config.startDate||!db.config.why){document.getElementById('setupScreen').classList.add('open');initSetup();}
+else{document.getElementById('mainApp').style.display='flex';initApp();}
+</script>
+</body>
+</html>
