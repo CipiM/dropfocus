@@ -76,6 +76,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .task-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; display: flex; align-items: center; gap: 12px; transition: border-color .2s; position: relative; overflow: hidden; }
 .task-card.done { opacity: 0.5; }
 .task-card.done .task-name { text-decoration: line-through; }
+.task-card.failed-card { border-color: rgba(231,76,60,0.3); background: rgba(231,76,60,0.05); }
 .task-check { width: 24px; height: 24px; border-radius: 8px; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all .2s; background: transparent; }
 .task-check.done { background: var(--green); border-color: var(--green); }
 .task-check.failed { background: var(--red); border-color: var(--red); }
@@ -176,8 +177,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .stat-num { font-family: var(--font-display); font-size: 32px; font-weight: 800; color: var(--accent); }
 .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
 .week-bars { display: flex; align-items: flex-end; gap: 6px; height: 80px; margin-top: 8px; }
-.week-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
-.week-bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; min-height: 4px; transition: height .5s ease; }
+.week-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: stretch; height: 100%; justify-content: flex-end; }
 .week-bar-label { font-size: 9px; color: var(--muted); }
 
 /* JOURNAL */
@@ -431,34 +431,46 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
     </div>
     <div class="section" style="margin-top:20px;">
       <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-num" id="statStreak">0</div>
-          <div class="stat-label">🔥 Streak zile consecutive</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-num" id="statWeek">0</div>
-          <div class="stat-label">✅ Taskuri săptămâna asta</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-num" id="statTotal">0</div>
-          <div class="stat-label">📋 Total taskuri completate</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-num" id="statRate">0%</div>
-          <div class="stat-label">🎯 Rată completare generală</div>
+        <div class="stat-card"><div class="stat-num" id="statStreak">0</div><div class="stat-label">🔥 Streak zile consecutive</div></div>
+        <div class="stat-card"><div class="stat-num" id="statWeek">0</div><div class="stat-label">✅ Taskuri săptămâna asta</div></div>
+        <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-label">📋 Total completate</div></div>
+        <div class="stat-card"><div class="stat-num" id="statRate">0%</div><div class="stat-label">🎯 Rată completare</div></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title" style="margin-bottom:12px;">Ultima săptămână — rezumat</div>
+      <div class="stat-card" style="display:flex;align-items:center;gap:20px;">
+        <canvas id="donutCanvas" width="110" height="110" style="flex-shrink:0;"></canvas>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <div style="width:12px;height:12px;border-radius:50%;background:var(--green);flex-shrink:0;"></div>
+            <span style="font-size:13px;" id="donutDone">0 făcute</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <div style="width:12px;height:12px;border-radius:50%;background:var(--red);flex-shrink:0;"></div>
+            <span style="font-size:13px;" id="donutFailed">0 nerealizate</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.5;">Apasă pe o bară de jos pentru detalii pe zi</div>
         </div>
       </div>
     </div>
     <div class="section">
       <div class="section-title" style="margin-bottom:12px;">Ultimele 7 zile</div>
-      <div class="stat-card" style="background: var(--surface);">
-        <div class="week-bars" id="weekBars"></div>
-        <div style="display:flex; gap:6px; margin-top:8px;" id="weekBarLabels"></div>
+      <div class="stat-card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);"><div style="width:10px;height:10px;border-radius:2px;background:var(--green);"></div>Realizat</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);"><div style="width:10px;height:10px;border-radius:2px;background:var(--red);"></div>Nerealizat</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);"><div style="width:10px;height:10px;border-radius:2px;background:rgba(240,240,245,0.2);"></div>În așteptare</div>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:6px;" id="weekBars"></div>
+        <div style="display:flex;gap:6px;margin-top:4px;" id="weekBarLabels"></div>
       </div>
     </div>
     <div class="section">
-      <div class="section-title" style="margin-bottom:12px;">Jurnal recent</div>
-      <div id="recentJournal"></div>
+      <div class="section-title" style="margin-bottom:12px;">Detalii zi selectată</div>
+      <div class="stat-card" style="padding:0;overflow:hidden;">
+        <div id="barDayPanel" style="min-height:60px;"></div>
+      </div>
     </div>
   </div>
 
@@ -569,11 +581,29 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   </nav>
 </div>
 
-<!-- MODAL: ADD TASK -->
+<!-- MODAL: FAIL REASON -->
+<div class="modal-overlay" id="failModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">De ce nu ai reușit? ❌</div>
+    <input type="hidden" id="failTaskDs">
+    <input type="hidden" id="failTaskId">
+    <div class="form-group">
+      <label class="form-label">Motivul (opțional)</label>
+      <textarea class="textarea-field" id="failReasonText" rows="3" placeholder="Ex: Nu am avut timp, a apărut ceva urgent..."></textarea>
+    </div>
+    <button class="btn-primary" onclick="saveFailReason()" style="background:linear-gradient(135deg,var(--red),#c0392b);">Marchează ca nerealizat</button>
+    <button class="btn-cancel" onclick="closeModal('failModal')">Anulează</button>
+  </div>
+</div>
+
+<!-- MODAL: ADD / EDIT TASK -->
 <div class="modal-overlay" id="addTaskModal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title">Task nou</div>
+    <div class="modal-title" id="addTaskModalTitle">Task nou</div>
+    <input type="hidden" id="editTaskId">
+    <input type="hidden" id="editTaskDs">
     <div class="form-group">
       <label class="form-label">Numele taskului</label>
       <input type="text" class="form-input" id="taskName" placeholder="Ex: Postez videoclip TikTok">
@@ -614,7 +644,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
         </div>
       </div>
     </div>
-    <button class="btn-primary" onclick="saveTask()">Adaugă task</button>
+    <button class="btn-primary" id="addTaskBtn" onclick="saveTask()">Adaugă task</button>
     <button class="btn-cancel" onclick="closeModal('addTaskModal')">Anulează</button>
   </div>
 </div>
@@ -647,7 +677,7 @@ const STORAGE_KEY='dropfocus_v2';
 let db={config:{why:'',startDate:'',totalDays:30},tasks:{},goals:[],journal:{}};
 function loadDB(){try{const r=localStorage.getItem(STORAGE_KEY);if(r)db=JSON.parse(r);}catch(e){}}
 function saveDB(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(db));}catch(e){}}
-function todayStr(){return new Date().toISOString().slice(0,10);}
+function todayStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 
 const quotes=[
   {text:"Most people quit on day 29 of a 30-day challenge. Don't be most people.",author:"— Unknown"},
@@ -728,7 +758,8 @@ function renderTaskCard(t,dateStr){
   const chk=t.status==='done'?'done':t.status==='failed'?'failed':'';
   const icon=t.status==='done'?`<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg>`:t.status==='failed'?`<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>`:'';
   const interval=formatInterval(t);
-  return`<div class="task-card ${t.status==='done'?'done':''}">
+  const failReasonHtml=t.status==='failed'&&t.failReason?`<div style="margin-top:6px;padding:6px 10px;background:rgba(231,76,60,0.1);border-radius:6px;font-size:11px;color:var(--red);border-left:2px solid var(--red);">💬 ${t.failReason}</div>`:'';
+  return`<div class="task-card ${t.status==='done'?'done':t.status==='failed'?'failed-card':''}">
     <div class="task-check ${chk}" onclick="toggleTask('${dateStr}','${t.id}')">${icon}</div>
     <div class="task-info">
       <div class="task-name">${t.name}</div>
@@ -736,9 +767,11 @@ function renderTaskCard(t,dateStr){
         <span class="task-cat ${catC[t.cat]}">${catL[t.cat]}</span>
         ${interval?`<span class="task-time" style="color:var(--accent);">⏰ ${interval}</span>`:''}
       </div>
+      ${failReasonHtml}
     </div>
     <div class="task-actions">
       ${t.status!=='failed'&&t.status!=='done'?`<button class="task-btn fail-btn" onclick="failTask('${dateStr}','${t.id}')">✗</button>`:''}
+      <button class="task-btn edit-btn" onclick="openEditTask('${dateStr}','${t.id}')">✏️</button>
       <button class="task-btn" onclick="deleteTask('${dateStr}','${t.id}')">🗑</button>
     </div>
   </div>`;
@@ -758,12 +791,32 @@ function renderTodayTasks(){
   document.getElementById('progressFill').style.width=pct+'%';
 }
 
-function toggleTask(ds,id){const t=(db.tasks[ds]||[]).find(t=>t.id===id);if(!t)return;t.status=t.status==='done'?'todo':'done';saveDB();if(ds===todayStr())renderTodayTasks();renderCalendar();if(ds===calSelectedDate){renderCalDay(ds);if(currentCalView==='day')renderTimeline(ds);}}
-function failTask(ds,id){const t=(db.tasks[ds]||[]).find(t=>t.id===id);if(!t)return;t.status='failed';saveDB();if(ds===todayStr())renderTodayTasks();if(ds===calSelectedDate){renderCalDay(ds);if(currentCalView==='day')renderTimeline(ds);}}
+function toggleTask(ds,id){const t=(db.tasks[ds]||[]).find(t=>t.id===id);if(!t)return;t.status=t.status==='done'?'todo':'done';if(t.status==='todo')t.failReason='';saveDB();if(ds===todayStr())renderTodayTasks();renderCalendar();if(ds===calSelectedDate){renderCalDay(ds);if(currentCalView==='day')renderTimeline(ds);}}
+function failTask(ds,id){
+  // open fail reason modal
+  document.getElementById('failTaskDs').value=ds;
+  document.getElementById('failTaskId').value=id;
+  document.getElementById('failReasonText').value='';
+  document.getElementById('failModal').classList.add('open');
+  setTimeout(()=>document.getElementById('failReasonText').focus(),100);
+}
+function saveFailReason(){
+  const ds=document.getElementById('failTaskDs').value;
+  const id=document.getElementById('failTaskId').value;
+  const reason=document.getElementById('failReasonText').value.trim();
+  const t=(db.tasks[ds]||[]).find(t=>t.id===id);
+  if(!t)return;
+  t.status='failed';
+  t.failReason=reason;
+  saveDB();
+  closeModal('failModal');
+  if(ds===todayStr())renderTodayTasks();
+  if(ds===calSelectedDate){renderCalDay(ds);if(currentCalView==='day')renderTimeline(ds);}
+}
 function deleteTask(ds,id){if(!db.tasks[ds])return;db.tasks[ds]=db.tasks[ds].filter(t=>t.id!==id);saveDB();if(ds===todayStr())renderTodayTasks();renderCalendar();if(ds===calSelectedDate){renderCalDay(ds);if(currentCalView==='day')renderTimeline(ds);}}
 function saveEveningNote(){const today=todayStr(),note=document.getElementById('eveningNote').value.trim(),win=document.getElementById('eveningWin').value.trim();if(!note&&!win)return;db.journal[today]={note,win,date:today};saveDB();alert('✅ Nota zilei salvată!');}
 
-// ADD TASK MODAL
+// ADD / EDIT TASK MODAL
 let addingForCalendar=false;
 
 function populateTimeSelects(){
@@ -789,10 +842,39 @@ function setTimeSelects(startHH,startMM,endHH,endMM){
 function openAddTask(forCal){
   addingForCalendar=!!forCal;
   const d=addingForCalendar&&calSelectedDate?calSelectedDate:todayStr();
+  document.getElementById('editTaskId').value='';
+  document.getElementById('editTaskDs').value='';
+  document.getElementById('addTaskModalTitle').textContent='Task nou';
+  document.getElementById('addTaskBtn').textContent='Adaugă task';
+  document.getElementById('addTaskBtn').style.background='linear-gradient(135deg,var(--accent),var(--accent2))';
   document.getElementById('taskDate').value=d;
   document.getElementById('taskName').value='';
+  document.getElementById('taskCat').value='shopify';
   populateTimeSelects();
   setTimeSelects('08','00','09','00');
+  document.getElementById('addTaskModal').classList.add('open');
+  setTimeout(()=>document.getElementById('taskName').focus(),100);
+}
+
+function openEditTask(ds,id){
+  const t=(db.tasks[ds]||[]).find(t=>t.id===id);
+  if(!t)return;
+  populateTimeSelects();
+  document.getElementById('editTaskId').value=id;
+  document.getElementById('editTaskDs').value=ds;
+  document.getElementById('addTaskModalTitle').textContent='Editează task';
+  document.getElementById('addTaskBtn').textContent='Salvează modificările';
+  document.getElementById('addTaskBtn').style.background='linear-gradient(135deg,#4a9eff,#2d7dd2)';
+  document.getElementById('taskName').value=t.name;
+  document.getElementById('taskCat').value=t.cat;
+  document.getElementById('taskDate').value=ds;
+  const sh=t.timeStart?t.timeStart.split(':')[0]:'08';
+  const sm=t.timeStart?t.timeStart.split(':')[1]:'00';
+  const eh=t.timeEnd?t.timeEnd.split(':')[0]:'09';
+  const em=t.timeEnd?t.timeEnd.split(':')[1]:'00';
+  // find closest minute option (00,15,30,45)
+  const snapMin=m=>{const n=parseInt(m);return n<8?'00':n<23?'15':n<38?'30':n<53?'45':'00';};
+  setTimeSelects(sh,snapMin(sm),eh,snapMin(em));
   document.getElementById('addTaskModal').classList.add('open');
   setTimeout(()=>document.getElementById('taskName').focus(),100);
 }
@@ -804,13 +886,32 @@ function saveTask(){
   const date=document.getElementById('taskDate').value||todayStr();
   const timeStart=document.getElementById('taskStartH').value+':'+document.getElementById('taskStartM').value;
   const timeEnd=document.getElementById('taskEndH').value+':'+document.getElementById('taskEndM').value;
-  if(!db.tasks[date])db.tasks[date]=[];
-  db.tasks[date].push({id:'t'+Date.now(),name,cat,timeStart,timeEnd,status:'todo'});
+
+  const editId=document.getElementById('editTaskId').value;
+  const editDs=document.getElementById('editTaskDs').value;
+
+  if(editId&&editDs){
+    // EDIT MODE — update existing task
+    const t=(db.tasks[editDs]||[]).find(t=>t.id===editId);
+    if(t){t.name=name;t.cat=cat;t.timeStart=timeStart;t.timeEnd=timeEnd;}
+    // if date changed, move task to new date
+    if(date!==editDs){
+      db.tasks[editDs]=db.tasks[editDs].filter(t=>t.id!==editId);
+      if(!db.tasks[date])db.tasks[date]=[];
+      if(t){db.tasks[date].push(t);}
+    }
+  } else {
+    // ADD MODE — create new task
+    if(!db.tasks[date])db.tasks[date]=[];
+    db.tasks[date].push({id:'t'+Date.now(),name,cat,timeStart,timeEnd,status:'todo'});
+  }
+
   saveDB();
   closeModal('addTaskModal');
-  if(date===todayStr())renderTodayTasks();
+  if(date===todayStr()||editDs===todayStr())renderTodayTasks();
   renderCalendar();
-  if(date===calSelectedDate){renderCalDay(date);if(currentCalView==='day')renderTimeline(date);}
+  const refreshDs=date||editDs;
+  if(refreshDs===calSelectedDate){renderCalDay(refreshDs);if(currentCalView==='day')renderTimeline(refreshDs);}
 }
 
 // CALENDAR
@@ -939,26 +1040,137 @@ function openAddGoal(){document.getElementById('goalText').value='';document.get
 function saveGoal(){const text=document.getElementById('goalText').value.trim();if(!text){alert('Adaugă textul obiectivului.');return;}const week=document.getElementById('goalWeek').value;db.goals.push({id:'g'+Date.now(),text,week,status:'todo'});saveDB();closeModal('addGoalModal');renderGoals('all');}
 
 // STATS
-function calcStreak(){let s=0,d=new Date();while(true){const ds=d.toISOString().slice(0,10),t=db.tasks[ds]||[];if(!t.length||!t.some(t=>t.status==='done'))break;s++;d.setDate(d.getDate()-1);}return s;}
+function calcStreak(){let s=0,d=new Date();while(true){const t=new Date(d);const ds=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');const tasks=db.tasks[ds]||[];if(!tasks.length||!tasks.some(t=>t.status==='done'))break;s++;d.setDate(d.getDate()-1);}return s;}
+
+function drawDonut(canvasId,done,failed,todo){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const total=done+failed+todo;
+  const cx=canvas.width/2,cy=canvas.height/2,r=cx-12;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(total===0){
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle='rgba(255,255,255,0.07)';ctx.lineWidth=16;ctx.stroke();
+    return;
+  }
+  const slices=[
+    {val:done,color:'#2ecc71'},
+    {val:failed,color:'#e74c3c'},
+    {val:todo,color:'rgba(255,255,255,0.1)'}
+  ];
+  let start=-Math.PI/2;
+  slices.forEach(s=>{
+    if(!s.val)return;
+    const angle=(s.val/total)*Math.PI*2;
+    ctx.beginPath();ctx.arc(cx,cy,r,start,start+angle);
+    ctx.strokeStyle=s.color;ctx.lineWidth=16;ctx.lineCap='butt';ctx.stroke();
+    start+=angle;
+  });
+  // center text
+  const pct=total?Math.round(done/total*100):0;
+  ctx.fillStyle='#f0f0f5';ctx.font='bold 18px Syne,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(pct+'%',cx,cy-8);
+  ctx.font='11px DM Sans,sans-serif';ctx.fillStyle='rgba(240,240,245,0.45)';
+  ctx.fillText('realizate',cx,cy+12);
+}
+
+let selectedBarDay=null;
 function renderStats(){
   document.getElementById('statStreak').textContent=calcStreak();
-  let wD=0,tD=0,tA=0;const now=new Date();
-  Object.entries(db.tasks).forEach(([ds,tasks])=>{const diff=Math.floor((now-new Date(ds+'T00:00:00'))/86400000);tasks.forEach(t=>{tA++;if(t.status==='done'){tD++;if(diff<=7)wD++;}});});
+  let wD=0,wF=0,tD=0,tF=0,tA=0;
+  const now=new Date();
+  // collect week data properly
+  const weekData=[];
+  const dn=['Du','Lu','Ma','Mi','Jo','Vi','Sâ'];
+  for(let i=6;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const tasks=db.tasks[ds]||[];
+    const done=tasks.filter(t=>t.status==='done').length;
+    const failed=tasks.filter(t=>t.status==='failed').length;
+    const todo=tasks.filter(t=>t.status==='todo').length;
+    weekData.push({ds,done,failed,todo,total:tasks.length,dayName:dn[d.getDay()]});
+    wD+=done;wF+=failed;
+  }
+  Object.entries(db.tasks).forEach(([ds,tasks])=>{tasks.forEach(t=>{tA++;if(t.status==='done')tD++;if(t.status==='failed')tF++;});});
   document.getElementById('statWeek').textContent=wD;
   document.getElementById('statTotal').textContent=tD;
   document.getElementById('statRate').textContent=tA?Math.round(tD/tA*100)+'%':'0%';
+
+  // Donut chart - last 7 days
+  const w7total=weekData.reduce((a,w)=>a+w.total,0);
+  const w7done=wD,w7failed=wF,w7todo=w7total-wD-wF;
+  drawDonut('donutCanvas',w7done,w7failed,w7todo);
+  document.getElementById('donutDone').textContent=w7done+' făcute';
+  document.getElementById('donutFailed').textContent=w7failed+' nerealizate';
+
+  // Bar chart
   const bars=document.getElementById('weekBars'),labels=document.getElementById('weekBarLabels');
-  const dn=['Du','Lu','Ma','Mi','Jo','Vi','Sâ'];
-  let bH='',lH='',mx=1,wd=[];
-  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=d.toISOString().slice(0,10),done=(db.tasks[ds]||[]).filter(t=>t.status==='done').length;wd.push({ds,done,dn:dn[d.getDay()]});if(done>mx)mx=done;}
-  wd.forEach(w=>{const h=Math.max(4,Math.round(w.done/mx*64));bH+=`<div class="week-bar-wrap"><div class="week-bar" style="height:${h}px;opacity:${w.ds===todayStr()?1:0.6};"></div></div>`;lH+=`<div style="flex:1;text-align:center;font-size:9px;color:var(--muted);">${w.dn}</div>`;});
-  bars.innerHTML=bH;labels.innerHTML=lH;
-  const rj=document.getElementById('recentJournal');
-  const entries=Object.values(db.journal).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
-  rj.innerHTML=entries.length?entries.map(e=>`<div class="journal-entry"><div class="journal-date">${new Date(e.date+'T00:00:00').toLocaleDateString('ro',{weekday:'long',day:'numeric',month:'long'})}</div><div class="journal-text">${e.note||'—'}</div>${e.win?`<div class="journal-win">🏆 ${e.win}</div>`:''}</div>`).join(''):`<div class="empty-state"><div class="empty-text">Nicio notă de jurnal încă.</div></div>`;
+  let bH='',lH='';
+  const mx=Math.max(1,...weekData.map(w=>w.total));
+  const BAR_MAX=56;
+  weekData.forEach((w)=>{
+    const isToday=w.ds===todayStr();
+    const isSel=w.ds===selectedBarDay;
+    // calculate pixel heights proportional to max, minimum 6px if has tasks
+    const totalH=w.total?Math.max(8,Math.round(w.total/mx*BAR_MAX)):0;
+    const doneH=w.total?Math.round(w.done/w.total*totalH):0;
+    const failH=w.total?Math.round(w.failed/w.total*totalH):0;
+    const todoH=Math.max(0,totalH-doneH-failH);
+    bH+=`<div class="week-bar-wrap" onclick="selectBarDay('${w.ds}')" style="cursor:pointer;position:relative;">
+      <div style="display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;height:${BAR_MAX}px;gap:1px;">
+        ${w.todo&&todoH?`<div style="height:${todoH}px;background:rgba(240,240,245,0.2);border-radius:${!doneH&&!failH?'4px 4px':'0 0'} 0 0;"></div>`:''}
+        ${w.failed&&failH?`<div style="height:${failH}px;background:var(--red);opacity:${isToday?1:0.75};"></div>`:''}
+        ${w.done&&doneH?`<div style="height:${doneH}px;background:var(--green);border-radius:4px 4px 0 0;opacity:${isToday?1:0.75};"></div>`:''}
+        ${!w.total?`<div style="height:3px;background:rgba(255,255,255,0.07);border-radius:2px;margin-bottom:0;"></div>`:''}
+      </div>
+      <div style="height:3px;background:${isSel?'var(--accent)':'transparent'};border-radius:2px;margin-top:3px;transition:background .2s;"></div>
+    </div>`;
+    lH+=`<div style="flex:1;text-align:center;font-size:9px;color:${isToday?'var(--accent)':isSel?'var(--text)':'var(--muted)'};font-weight:${isSel?'700':'400'};">${w.dayName}</div>`;
+  });
+  bars.innerHTML=bH;
+  labels.innerHTML=lH;
+
+  // Day detail panel
+  renderBarDayPanel(selectedBarDay||todayStr(), weekData);
 }
 
-// JOURNAL
+function selectBarDay(ds){
+  selectedBarDay=ds;
+  renderStats();
+}
+
+function renderBarDayPanel(ds,weekData){
+  const panel=document.getElementById('barDayPanel');
+  if(!panel)return;
+  const tasks=db.tasks[ds]||[];
+  const d=new Date(ds+'T00:00:00');
+  const mNames=['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Nov','Dec'];
+  const dNames=['Dum','Lun','Mar','Mie','Joi','Vin','Sâm'];
+  if(!tasks.length){
+    panel.innerHTML=`<div style="padding:14px 16px;font-size:13px;color:var(--muted);">Niciun task în ${dNames[d.getDay()]}, ${d.getDate()} ${mNames[d.getMonth()]}.</div>`;
+    return;
+  }
+  const sorted=sortByTime(tasks);
+  panel.innerHTML=`
+    <div style="padding:12px 16px 4px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-family:var(--font-display);font-weight:700;">
+      ${dNames[d.getDay()]}, ${d.getDate()} ${mNames[d.getMonth()]}
+    </div>
+    ${sorted.map(t=>{
+      const statusIcon=t.status==='done'?'✅':t.status==='failed'?'❌':'⬜';
+      const interval=t.timeStart?` <span style="color:var(--accent);font-size:10px;">⏰${t.timeStart}–${t.timeEnd}</span>`:'';
+      const reason=t.failReason?`<div style="font-size:11px;color:var(--red);margin-top:3px;">💬 ${t.failReason}</div>`:'';
+      return`<div style="padding:8px 16px;border-top:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;">
+          <span>${statusIcon}</span>
+          <span style="flex:1;">${t.name}${interval}</span>
+        </div>${reason}
+      </div>`;
+    }).join('')}
+  `;
+}
+
+
 function renderJournal(){
   const entries=Object.values(db.journal).sort((a,b)=>b.date.localeCompare(a.date));
   document.getElementById('journalList').innerHTML=entries.length?entries.map(e=>`<div class="journal-entry"><div class="journal-date">${new Date(e.date+'T00:00:00').toLocaleDateString('ro',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div><div class="journal-text">${e.note||'—'}</div>${e.win?`<div class="journal-win">🏆 ${e.win}</div>`:''}</div>`).join(''):`<div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">Nicio notă adăugată încă.<br>Scrie prima ta reflecție în ecranul Azi.</div></div>`;
