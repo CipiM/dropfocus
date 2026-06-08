@@ -455,8 +455,14 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
       </div>
     </div>
     <div class="section">
-      <div class="section-title" style="margin-bottom:12px;">Ultimele 7 zile</div>
+      <div class="section-title" style="margin-bottom:12px;">Progres săptămânal</div>
       <div class="stat-card">
+        <!-- WEEK NAVIGATOR -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <button class="cal-nav-btn" onclick="changeStatsWeek(-1)">‹</button>
+          <span style="font-family:var(--font-display);font-size:13px;font-weight:700;" id="statsWeekLabel">—</span>
+          <button class="cal-nav-btn" id="statsWeekNext" onclick="changeStatsWeek(1)">›</button>
+        </div>
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
           <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);"><div style="width:10px;height:10px;border-radius:2px;background:var(--green);"></div>Realizat</div>
           <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);"><div style="width:10px;height:10px;border-radius:2px;background:var(--red);"></div>Nerealizat</div>
@@ -484,6 +490,57 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
     </div>
     <div class="section" style="margin-top:20px;">
       <div id="journalList"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN: BUDGET -->
+  <div class="screen" id="screenBudget">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Budget</div>
+        <div class="topbar-sub" id="budgetSubtitle">Investiții &amp; Câștiguri</div>
+      </div>
+      <button class="btn-add" onclick="openAddTransaction()">+ Adaugă</button>
+    </div>
+
+    <!-- SUMAR CARDURI -->
+    <div class="section" style="margin-top:20px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div class="stat-card" style="text-align:center;padding:14px 8px;">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">Investit</div>
+          <div style="font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--red);" id="budgetOut">0</div>
+        </div>
+        <div class="stat-card" style="text-align:center;padding:14px 8px;">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">Câștigat</div>
+          <div style="font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--green);" id="budgetIn">0</div>
+        </div>
+        <div class="stat-card" style="text-align:center;padding:14px 8px;">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">Profit</div>
+          <div style="font-family:var(--font-display);font-size:20px;font-weight:800;" id="budgetProfit">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DONUT CHART -->
+    <div class="section">
+      <div class="stat-card" style="display:flex;align-items:center;gap:16px;">
+        <canvas id="budgetDonut" width="110" height="110" style="flex-shrink:0;"></canvas>
+        <div style="flex:1;" id="budgetDonutLegend"></div>
+      </div>
+    </div>
+
+    <!-- FILTER TABS -->
+    <div class="section">
+      <div class="chip-tabs" id="budgetFilter">
+        <div class="chip active" onclick="filterTransactions('all',this)">Toate</div>
+        <div class="chip" onclick="filterTransactions('income',this)">💰 Venituri</div>
+        <div class="chip" onclick="filterTransactions('expense',this)">💸 Cheltuieli</div>
+      </div>
+    </div>
+
+    <!-- LISTA TRANZACTII -->
+    <div class="section" style="margin-top:8px;">
+      <div id="transactionList"></div>
     </div>
   </div>
 
@@ -526,6 +583,18 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
               <div class="settings-row-label">Zile rămase</div>
             </div>
             <span class="text-accent" id="settingsDaysLeft" style="font-family:var(--font-display);font-weight:700;">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">Budget</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <div>
+              <div class="settings-row-label">Moneda</div>
+              <div class="settings-row-sub">Toate sumele sunt în RON</div>
+            </div>
+            <span style="font-family:var(--font-display);font-weight:700;color:var(--accent);">RON</span>
           </div>
         </div>
       </div>
@@ -574,11 +643,70 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
       <span class="nav-icon">📝</span>
       <span class="nav-label">Jurnal</span>
     </div>
+    <div class="nav-item" onclick="switchScreen('budget', this)">
+      <span class="nav-icon">💶</span>
+      <span class="nav-label">Budget</span>
+    </div>
     <div class="nav-item" onclick="switchScreen('setari', this)">
       <span class="nav-icon">⚙️</span>
       <span class="nav-label">Setări</span>
     </div>
   </nav>
+</div>
+
+<!-- MODAL: CONFIRM DELETE TRANSACTION -->
+<div class="modal-overlay" id="confirmDeleteModal">
+  <div class="modal" style="padding-bottom:28px;">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Ștergi tranzacția? 🗑</div>
+    <input type="hidden" id="confirmDeleteId">
+    <p style="font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.5;">Această acțiune nu poate fi anulată.</p>
+    <button class="btn-primary" onclick="confirmDeleteTransaction()" style="background:linear-gradient(135deg,var(--red),#c0392b);">Da, șterge</button>
+    <button class="btn-cancel" onclick="closeModal('confirmDeleteModal')">Anulează</button>
+  </div>
+</div>
+
+<!-- MODAL: ADD TRANSACTION -->
+<div class="modal-overlay" id="addTransactionModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="transactionModalTitle">Tranzacție nouă</div>
+    <input type="hidden" id="editTransactionId">
+    <div class="form-group">
+      <label class="form-label">Tip</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button id="btnIncome" onclick="setTransactionType('income')" style="padding:12px;border-radius:var(--radius-sm);border:2px solid var(--green);background:rgba(46,204,113,0.15);color:var(--green);font-family:var(--font-display);font-weight:700;font-size:14px;cursor:pointer;">💰 Venit</button>
+        <button id="btnExpense" onclick="setTransactionType('expense')" style="padding:12px;border-radius:var(--radius-sm);border:2px solid var(--border);background:transparent;color:var(--muted);font-family:var(--font-display);font-weight:700;font-size:14px;cursor:pointer;">💸 Cheltuială</button>
+      </div>
+      <input type="hidden" id="transactionType" value="income">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descriere</label>
+      <input type="text" class="form-input" id="transactionDesc" placeholder="Ex: Vânzări magazin azi, Shopify lunar...">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Sumă (RON)</label>
+        <input type="number" class="form-input" id="transactionAmount" placeholder="0" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input type="date" class="form-input" id="transactionDate">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Categorie</label>
+      <select class="form-select" id="transactionCat">
+        <option value="vanzari">🛒 Vânzări</option>
+        <option value="marketing">📣 Marketing</option>
+        <option value="produs">📦 Produs / Stoc</option>
+        <option value="software">💻 Software / Abonamente</option>
+        <option value="alt">📌 Altele</option>
+      </select>
+    </div>
+    <button class="btn-primary" id="saveTransactionBtn" onclick="saveTransaction()">Adaugă</button>
+    <button class="btn-cancel" onclick="closeModal('addTransactionModal')">Anulează</button>
+  </div>
 </div>
 
 <!-- MODAL: FAIL REASON -->
@@ -673,9 +801,22 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 </div>
 
 <script>
-const STORAGE_KEY='dropfocus_v2';
-let db={config:{why:'',startDate:'',totalDays:30},tasks:{},goals:[],journal:{}};
-function loadDB(){try{const r=localStorage.getItem(STORAGE_KEY);if(r)db=JSON.parse(r);}catch(e){}}
+const STORAGE_KEY='dropfocus_v3';
+let db={config:{why:'',startDate:'',totalDays:30,currency:'RON'},tasks:{},goals:[],journal:{},transactions:[]};
+function loadDB(){
+  try{
+    // try new key first, fallback to old key for migration
+    let raw=localStorage.getItem(STORAGE_KEY);
+    if(!raw)raw=localStorage.getItem('dropfocus_v2');
+    if(!raw)raw=localStorage.getItem('dropfocus_v1');
+    if(raw){
+      db=JSON.parse(raw);
+      // migrate: add missing fields
+      if(!db.transactions)db.transactions=[];
+      if(!db.config.currency)db.config.currency='RON';
+    }
+  }catch(e){}
+}
 function saveDB(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(db));}catch(e){}}
 function todayStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 
@@ -723,6 +864,7 @@ function switchScreen(name,el){
   if(name==='jurnal')renderJournal();
   if(name==='luna')renderGoals('all');
   if(name==='setari')renderSettings();
+  if(name==='budget')renderBudget();
   if(name==='calendar'){renderCalendar();renderCalDay(calSelectedDate);if(currentCalView==='day')renderTimeline(calSelectedDate);}
 }
 
@@ -1075,34 +1217,80 @@ function drawDonut(canvasId,done,failed,todo){
 }
 
 let selectedBarDay=null;
-function renderStats(){
-  document.getElementById('statStreak').textContent=calcStreak();
-  let wD=0,wF=0,tD=0,tF=0,tA=0;
-  const now=new Date();
-  // collect week data properly
+let statsWeekOffset=0;
+
+function changeStatsWeek(dir){
+  statsWeekOffset+=dir;
+  if(statsWeekOffset>0)statsWeekOffset=0;
+  selectedBarDay=null;
+  renderStats();
+}
+
+function getMondayOfWeek(offset){
+  // găsește Lunea săptămânii curente, apoi aplică offset-ul de săptămâni
+  const today=new Date();
+  const day=today.getDay(); // 0=Du, 1=Lu, ..., 6=Sâ
+  const diffToMonday=day===0?-6:1-day; // câte zile până la Luni (sau înapoi)
+  const monday=new Date(today);
+  monday.setDate(today.getDate()+diffToMonday+(offset*7));
+  monday.setHours(0,0,0,0);
+  return monday;
+}
+
+function getWeekData(offset){
+  const dn=['Lu','Ma','Mi','Jo','Vi','Sâ','Du']; // Luni-Duminică
   const weekData=[];
-  const dn=['Du','Lu','Ma','Mi','Jo','Vi','Sâ'];
-  for(let i=6;i>=0;i--){
-    const d=new Date();d.setDate(d.getDate()-i);
+  const monday=getMondayOfWeek(offset);
+  for(let i=0;i<7;i++){
+    const d=new Date(monday);
+    d.setDate(monday.getDate()+i);
     const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     const tasks=db.tasks[ds]||[];
     const done=tasks.filter(t=>t.status==='done').length;
     const failed=tasks.filter(t=>t.status==='failed').length;
     const todo=tasks.filter(t=>t.status==='todo').length;
-    weekData.push({ds,done,failed,todo,total:tasks.length,dayName:dn[d.getDay()]});
-    wD+=done;wF+=failed;
+    weekData.push({ds,done,failed,todo,total:tasks.length,dayName:dn[i]});
   }
-  Object.entries(db.tasks).forEach(([ds,tasks])=>{tasks.forEach(t=>{tA++;if(t.status==='done')tD++;if(t.status==='failed')tF++;});});
-  document.getElementById('statWeek').textContent=wD;
+  return weekData;
+}
+
+function formatWeekLabel(weekData){
+  const mNames=['ian','feb','mar','apr','mai','iun','iul','aug','sep','oct','nov','dec'];
+  const first=new Date(weekData[0].ds+'T00:00:00');
+  const last=new Date(weekData[6].ds+'T00:00:00');
+  const f=first.getDate()+' '+mNames[first.getMonth()];
+  const l=last.getDate()+' '+mNames[last.getMonth()]+' '+last.getFullYear();
+  return f+' – '+l;
+}
+
+function renderStats(){
+  document.getElementById('statStreak').textContent=calcStreak();
+  let tD=0,tA=0;
+  Object.entries(db.tasks).forEach(([ds,tasks])=>{tasks.forEach(t=>{tA++;if(t.status==='done')tD++;});});
   document.getElementById('statTotal').textContent=tD;
   document.getElementById('statRate').textContent=tA?Math.round(tD/tA*100)+'%':'0%';
 
-  // Donut chart - last 7 days
-  const w7total=weekData.reduce((a,w)=>a+w.total,0);
-  const w7done=wD,w7failed=wF,w7todo=w7total-wD-wF;
-  drawDonut('donutCanvas',w7done,w7failed,w7todo);
-  document.getElementById('donutDone').textContent=w7done+' făcute';
-  document.getElementById('donutFailed').textContent=w7failed+' nerealizate';
+  // statWeek = mereu săptămâna curentă
+  const curWeek=getWeekData(0);
+  document.getElementById('statWeek').textContent=curWeek.reduce((s,w)=>s+w.done,0);
+
+  // săptămâna selectată
+  const weekData=getWeekData(statsWeekOffset);
+  const wD=weekData.reduce((s,w)=>s+w.done,0);
+  const wF=weekData.reduce((s,w)=>s+w.failed,0);
+  const wTotal=weekData.reduce((s,w)=>s+w.total,0);
+
+  // week navigator
+  const isCurrentWeek=statsWeekOffset===0;
+  document.getElementById('statsWeekLabel').textContent=isCurrentWeek?'Săptămâna curentă — '+formatWeekLabel(weekData):formatWeekLabel(weekData);
+  const nextBtn=document.getElementById('statsWeekNext');
+  nextBtn.style.opacity=isCurrentWeek?'0.3':'1';
+  nextBtn.disabled=isCurrentWeek;
+
+  // Donut
+  drawDonut('donutCanvas',wD,wF,wTotal-wD-wF);
+  document.getElementById('donutDone').textContent=wD+' făcute';
+  document.getElementById('donutFailed').textContent=wF+' nerealizate';
 
   // Bar chart
   const bars=document.getElementById('weekBars'),labels=document.getElementById('weekBarLabels');
@@ -1112,7 +1300,6 @@ function renderStats(){
   weekData.forEach((w)=>{
     const isToday=w.ds===todayStr();
     const isSel=w.ds===selectedBarDay;
-    // calculate pixel heights proportional to max, minimum 6px if has tasks
     const totalH=w.total?Math.max(8,Math.round(w.total/mx*BAR_MAX)):0;
     const doneH=w.total?Math.round(w.done/w.total*totalH):0;
     const failH=w.total?Math.round(w.failed/w.total*totalH):0;
@@ -1122,7 +1309,7 @@ function renderStats(){
         ${w.todo&&todoH?`<div style="height:${todoH}px;background:rgba(240,240,245,0.2);border-radius:${!doneH&&!failH?'4px 4px':'0 0'} 0 0;"></div>`:''}
         ${w.failed&&failH?`<div style="height:${failH}px;background:var(--red);opacity:${isToday?1:0.75};"></div>`:''}
         ${w.done&&doneH?`<div style="height:${doneH}px;background:var(--green);border-radius:4px 4px 0 0;opacity:${isToday?1:0.75};"></div>`:''}
-        ${!w.total?`<div style="height:3px;background:rgba(255,255,255,0.07);border-radius:2px;margin-bottom:0;"></div>`:''}
+        ${!w.total?`<div style="height:3px;background:rgba(255,255,255,0.07);border-radius:2px;"></div>`:''}
       </div>
       <div style="height:3px;background:${isSel?'var(--accent)':'transparent'};border-radius:2px;margin-top:3px;transition:background .2s;"></div>
     </div>`;
@@ -1131,8 +1318,7 @@ function renderStats(){
   bars.innerHTML=bH;
   labels.innerHTML=lH;
 
-  // Day detail panel
-  renderBarDayPanel(selectedBarDay||todayStr(), weekData);
+  renderBarDayPanel(selectedBarDay||(statsWeekOffset===0?todayStr():weekData[6].ds), weekData);
 }
 
 function selectBarDay(ds){
@@ -1181,15 +1367,204 @@ function renderSettings(){
   document.getElementById('settingsWhy').value=db.config.why||'';
   document.getElementById('settingsStart').value=db.config.startDate||'';
   document.getElementById('settingsDays').value=db.config.totalDays||30;
+  document.getElementById('settingsCurrency').value=db.config.currency||'€';
   const s=new Date(db.config.startDate),e=new Date(s);e.setDate(e.getDate()+db.config.totalDays);
   document.getElementById('settingsDaysLeft').textContent=Math.max(0,Math.ceil((e-new Date())/86400000))+' zile';
 }
 function saveWhy(){db.config.why=document.getElementById('settingsWhy').value.trim();saveDB();document.getElementById('whyText').textContent=db.config.why;alert('✅ Motivul salvat!');}
 function saveInterval(){db.config.startDate=document.getElementById('settingsStart').value;db.config.totalDays=parseInt(document.getElementById('settingsDays').value)||30;saveDB();renderSettings();initTodayScreen();}
+function saveCurrency(){db.config.currency=document.getElementById('settingsCurrency').value;saveDB();alert('✅ Moneda salvată: '+db.config.currency);}
 function exportData(){const b=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='dropfocus_backup_'+todayStr()+'.json';a.click();}
 function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{db=JSON.parse(ev.target.result);saveDB();initApp();alert('✅ Date importate cu succes!');}catch{alert('Fișier invalid.');}};r.readAsText(f);}
 
-// UTILS
+// BUDGET
+let currentTransactionFilter='all';
+
+function getCurrency(){return db.config.currency||'€';}
+
+function setTransactionType(type){
+  document.getElementById('transactionType').value=type;
+  const btnI=document.getElementById('btnIncome');
+  const btnE=document.getElementById('btnExpense');
+  if(type==='income'){
+    btnI.style.borderColor='var(--green)';btnI.style.background='rgba(46,204,113,0.15)';btnI.style.color='var(--green)';
+    btnE.style.borderColor='var(--border)';btnE.style.background='transparent';btnE.style.color='var(--muted)';
+  } else {
+    btnE.style.borderColor='var(--red)';btnE.style.background='rgba(231,76,60,0.15)';btnE.style.color='var(--red)';
+    btnI.style.borderColor='var(--border)';btnI.style.background='transparent';btnI.style.color='var(--muted)';
+  }
+}
+
+function openAddTransaction(){
+  document.getElementById('editTransactionId').value='';
+  document.getElementById('transactionModalTitle').textContent='Tranzacție nouă';
+  document.getElementById('saveTransactionBtn').textContent='Adaugă';
+  document.getElementById('transactionDesc').value='';
+  document.getElementById('transactionAmount').value='';
+  document.getElementById('transactionDate').value=todayStr();
+  document.getElementById('transactionCat').value='vanzari';
+  setTransactionType('income');
+  document.getElementById('addTransactionModal').classList.add('open');
+  setTimeout(()=>document.getElementById('transactionDesc').focus(),100);
+}
+
+function openEditTransaction(id){
+  const t=db.transactions.find(t=>t.id===id);
+  if(!t)return;
+  document.getElementById('editTransactionId').value=id;
+  document.getElementById('transactionModalTitle').textContent='Editează tranzacție';
+  document.getElementById('saveTransactionBtn').textContent='Salvează';
+  document.getElementById('transactionDesc').value=t.desc;
+  document.getElementById('transactionAmount').value=t.amount;
+  document.getElementById('transactionDate').value=t.date;
+  document.getElementById('transactionCat').value=t.cat;
+  setTransactionType(t.type);
+  document.getElementById('addTransactionModal').classList.add('open');
+  setTimeout(()=>document.getElementById('transactionDesc').focus(),100);
+}
+
+function saveTransaction(){
+  const desc=document.getElementById('transactionDesc').value.trim();
+  const amount=parseFloat(document.getElementById('transactionAmount').value);
+  const date=document.getElementById('transactionDate').value||todayStr();
+  const type=document.getElementById('transactionType').value;
+  const cat=document.getElementById('transactionCat').value;
+  if(!desc){alert('Adaugă o descriere.');return;}
+  if(!amount||amount<=0){alert('Adaugă o sumă validă.');return;}
+  const editId=document.getElementById('editTransactionId').value;
+  if(editId){
+    const t=db.transactions.find(t=>t.id===editId);
+    if(t){t.desc=desc;t.amount=amount;t.date=date;t.type=type;t.cat=cat;}
+  } else {
+    db.transactions.push({id:'tr'+Date.now(),desc,amount,date,type,cat});
+  }
+  saveDB();
+  closeModal('addTransactionModal');
+  renderBudget();
+}
+
+function deleteTransaction(id){
+  document.getElementById('confirmDeleteId').value=id;
+  document.getElementById('confirmDeleteModal').classList.add('open');
+}
+
+function confirmDeleteTransaction(){
+  const id=document.getElementById('confirmDeleteId').value;
+  db.transactions=db.transactions.filter(t=>t.id!==id);
+  saveDB();
+  closeModal('confirmDeleteModal');
+  renderBudget();
+}
+
+function filterTransactions(filter,el){
+  currentTransactionFilter=filter;
+  document.querySelectorAll('#budgetFilter .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderTransactionList();
+}
+
+function renderBudget(){
+  if(!db.transactions)db.transactions=[];
+  const cur=getCurrency();
+  const totalIn=db.transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const totalOut=db.transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const profit=totalIn-totalOut;
+  document.getElementById('budgetOut').textContent=totalOut.toFixed(2)+' RON';
+  document.getElementById('budgetIn').textContent=totalIn.toFixed(2)+' RON';
+  const profitEl=document.getElementById('budgetProfit');
+  profitEl.textContent=(profit>=0?'+':'')+profit.toFixed(2)+' RON';
+  profitEl.style.color=profit>=0?'var(--green)':'var(--red)';
+  document.getElementById('budgetSubtitle').textContent=`${totalIn.toFixed(0)} RON câștigat / ${totalOut.toFixed(0)} RON investit`;
+
+  // Donut chart - categorii cheltuieli
+  const catColors={vanzari:'#2ecc71',marketing:'#f5a623',produs:'#4a9eff',software:'#9b59b6',alt:'rgba(240,240,245,0.4)'};
+  const catLabels={vanzari:'Vânzări',marketing:'Marketing',produs:'Produs/Stoc',software:'Software',alt:'Altele'};
+  const canvas=document.getElementById('budgetDonut');
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const cx=canvas.width/2,cy=canvas.height/2,r=cx-12;
+
+  // split: income vs expense total
+  const total=totalIn+totalOut;
+  const legend=document.getElementById('budgetDonutLegend');
+  if(total===0){
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle='rgba(255,255,255,0.07)';ctx.lineWidth=16;ctx.stroke();
+    legend.innerHTML=`<div style="font-size:13px;color:var(--muted);">Nicio tranzacție încă.<br>Adaugă prima intrare!</div>`;
+    renderTransactionList();return;
+  }
+
+  // draw income/expense split
+  let start=-Math.PI/2;
+  [{val:totalIn,color:'#2ecc71'},{val:totalOut,color:'#e74c3c'}].forEach(s=>{
+    if(!s.val)return;
+    const angle=(s.val/total)*Math.PI*2;
+    ctx.beginPath();ctx.arc(cx,cy,r,start,start+angle);
+    ctx.strokeStyle=s.color;ctx.lineWidth=16;ctx.lineCap='butt';ctx.stroke();
+    start+=angle;
+  });
+  // center text
+  const pct=total?Math.round(totalIn/total*100):0;
+  ctx.fillStyle='#f0f0f5';ctx.font='bold 16px Syne,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(pct+'%',cx,cy-8);
+  ctx.font='10px DM Sans,sans-serif';ctx.fillStyle='rgba(240,240,245,0.45)';
+  ctx.fillText('venituri',cx,cy+10);
+
+  // legend
+  legend.innerHTML=`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <div style="width:12px;height:12px;border-radius:50%;background:var(--green);flex-shrink:0;"></div>
+      <span style="font-size:13px;">${totalIn.toFixed(2)} RON venituri</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <div style="width:12px;height:12px;border-radius:50%;background:var(--red);flex-shrink:0;"></div>
+      <span style="font-size:13px;">${totalOut.toFixed(2)} RON cheltuieli</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="width:12px;height:12px;border-radius:50%;background:${profit>=0?'var(--green)':'var(--red)'};flex-shrink:0;"></div>
+      <span style="font-size:13px;font-weight:700;color:${profit>=0?'var(--green)':'var(--red)'};">${profit>=0?'Profit':'Pierdere'}: ${Math.abs(profit).toFixed(2)} RON</span>
+    </div>`;
+
+  renderTransactionList();
+}
+
+function renderTransactionList(){
+  const cur=getCurrency();
+  const catLabels={vanzari:'🛒 Vânzări',marketing:'📣 Marketing',produs:'📦 Produs',software:'💻 Software',alt:'📌 Altele'};
+  let list=db.transactions.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  if(currentTransactionFilter==='income')list=list.filter(t=>t.type==='income');
+  if(currentTransactionFilter==='expense')list=list.filter(t=>t.type==='expense');
+  const c=document.getElementById('transactionList');
+  if(!list.length){
+    c.innerHTML=`<div class="empty-state"><div class="empty-icon">💶</div><div class="empty-text">Nicio tranzacție adăugată încă.<br>Apasă + Adaugă pentru prima înregistrare.</div></div>`;
+    return;
+  }
+  c.innerHTML=list.map(t=>{
+    const isIncome=t.type==='income';
+    const d=new Date(t.date+'T00:00:00');
+    const dateStr=d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();
+    return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;">
+      <div style="width:40px;height:40px;border-radius:10px;background:${isIncome?'rgba(46,204,113,0.15)':'rgba(231,76,60,0.12)'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">
+        ${isIncome?'💰':'💸'}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.desc}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:3px;">
+          <span style="font-size:10px;padding:2px 7px;border-radius:8px;background:var(--surface2);color:var(--muted);">${catLabels[t.cat]||t.cat}</span>
+          <span style="font-size:11px;color:var(--muted);">${dateStr}</span>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-family:var(--font-display);font-size:16px;font-weight:700;color:${isIncome?'var(--green)':'var(--red)'};">${isIncome?'+':'-'}${t.amount.toFixed(2)} RON</div>
+        <div style="display:flex;gap:4px;margin-top:4px;justify-content:flex-end;">
+          <button onclick="openEditTransaction('${t.id}')" style="background:transparent;border:1px solid var(--border);border-radius:5px;padding:3px 7px;font-size:11px;color:var(--muted);cursor:pointer;">✏️</button>
+          <button onclick="deleteTransaction('${t.id}')" style="background:transparent;border:1px solid var(--border);border-radius:5px;padding:3px 7px;font-size:11px;color:var(--muted);cursor:pointer;">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});
 
